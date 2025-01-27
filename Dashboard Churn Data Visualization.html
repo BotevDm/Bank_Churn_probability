@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive Sales Dashboard</title>
+    <script src="https://cdn.plot.ly/plotly-2.24.2.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #89f7fe, #66a6ff);
+            color: #333;
+            display: flex;
+            justify-content: flex-start;
+            align-items: flex-start;
+            flex-direction: column;
+            height: 100vh;
+            overflow: auto;
+        }
+
+        h1 {
+            text-align: center;
+            margin-bottom: 20px;
+            font-size: 2rem;
+        }
+
+        #fileInput {
+            margin-bottom: 20px;
+            padding: 10px;
+            border: none;
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.7);
+            color: #333;
+            cursor: pointer;
+            display: block;
+            margin-left: auto;
+            margin-right: auto;
+            font-size: 1rem;
+        }
+
+        #dashboard {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            width: 100%;
+            max-width: 1200px;
+            padding: 10px;
+            margin-top: 20px;
+            margin-bottom: 40px;
+        }
+
+        .row {
+            display: flex;
+            justify-content: space-between;
+            gap: 20px;
+            width: 100%;
+        }
+
+        .chart {
+            backdrop-filter: blur(10px);
+            background: rgba(255, 255, 255, 0.6);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+            border-radius: 12px;
+            padding: 15px;
+            height: 350px;
+            color: #333;
+            flex: 1;
+            min-width: 300px;
+            overflow: hidden;
+        }
+
+        .chart.half {
+            flex: 0 0 48%;
+        }
+
+        .chart h3 {
+            text-align: center;
+            margin-bottom: 10px;
+            color: #222;
+            font-size: 18px;
+        }
+
+        @media (max-width: 768px) {
+            .row {
+                flex-direction: column;
+            }
+            .chart {
+                margin-bottom: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <h1>Interactive Sales Performance Dashboard</h1>
+    <input type="file" id="fileInput" accept="application/json">
+
+    <div id="dashboard">
+        <!-- Row 1: Churn vs Retention -->
+        <div class="row">
+            <div id="chart1" class="chart half">
+                <h3>Churn vs Retention</h3>
+            </div>
+            <div id="chart6" class="chart half">
+                <h3>Estimated Salary Distribution</h3>
+            </div>
+        </div>
+
+        <!-- Row 2: Exited vs Non-Exited Distribution -->
+        <div class="row">
+            <div id="chart8" class="chart half">
+                <h3>Exited vs Non-Exited Distribution</h3>
+            </div>
+            <div id="chart2" class="chart half">
+                <h3>Geographical Distribution</h3>
+            </div>
+        </div>
+
+        <!-- Row 3: Age and Tenure Distribution -->
+        <div class="row">
+            <div id="chart3" class="chart half">
+                <h3>Credit Score Distribution</h3>
+            </div>
+            <div id="chart4" class="chart half">
+                <h3>Age Demographics</h3>
+            </div>
+        </div>
+
+        <!-- Row 4: Tenure Distribution -->
+        <div class="row">
+            <div id="chart5" class="chart half">
+                <h3>Tenure Distribution</h3>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('fileInput').addEventListener('change', handleFileUpload);
+
+        function handleFileUpload(event) {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const data = JSON.parse(e.target.result);
+                    generateDashboard(data);
+                };
+                reader.readAsText(file);
+            }
+        }
+
+        function generateDashboard(data) {
+            // Prepare data
+            const churnData = data.reduce((acc, item) => {
+                acc[item.Exited] = (acc[item.Exited] || 0) + 1;
+                return acc;
+            }, {});
+
+            const geographyData = data.reduce((acc, item) => {
+                acc[item.Geography] = (acc[item.Geography] || 0) + 1;
+                return acc;
+            }, {});
+
+            const creditScores = data.map(item => item.CreditScore);
+            const ageData = data.map(item => item.Age);
+            const tenureData = data.map(item => item.Tenure);
+            const estimatedSalaries = data.map(item => item.EstimatedSalary);
+
+            // Churn vs Retention
+            Plotly.newPlot('chart1', [{
+                labels: ['Retained', 'Churned'],
+                values: [churnData[0] || 0, churnData[1] || 0],
+                type: 'pie',
+                marker: {
+                    colors: ['#66b3ff', '#ff9999']
+                }
+            }], {
+                title: 'Churn vs Retention',
+                height: 350
+            });
+
+            // Estimated Salary Distribution
+            Plotly.newPlot('chart6', [{
+                x: estimatedSalaries,
+                type: 'histogram',
+                marker: {
+                    color: '#ffccff'
+                }
+            }], {
+                title: 'Estimated Salary Distribution',
+                height: 350
+            });
+
+            // Exited vs Non-Exited Distribution
+            Plotly.newPlot('chart8', [{
+                x: Object.keys(churnData),
+                y: Object.values(churnData),
+                type: 'bar',
+                marker: {
+                    color: '#ffcc66'
+                }
+            }], {
+                title: 'Exited vs Non-Exited Distribution',
+                height: 350
+            });
+
+            // Geographical Distribution
+            Plotly.newPlot('chart2', [{
+                x: Object.keys(geographyData),
+                y: Object.values(geographyData),
+                type: 'bar',
+                marker: {
+                    color: '#ffcc99'
+                }
+            }], {
+                title: 'Geographical Distribution',
+                height: 350
+            });
+
+            // Credit Score Distribution
+            Plotly.newPlot('chart3', [{
+                x: creditScores,
+                type: 'histogram',
+                marker: {
+                    color: '#99ff99'
+                }
+            }], {
+                title: 'Credit Score Distribution',
+                height: 350
+            });
+
+            // Age Demographics
+            Plotly.newPlot('chart4', [{
+                x: ageData,
+                type: 'histogram',
+                marker: {
+                    color: '#ff9966'
+                }
+            }], {
+                title: 'Age Demographics',
+                height: 350
+            });
+
+            // Tenure Distribution
+            Plotly.newPlot('chart5', [{
+                x: tenureData,
+                type: 'histogram',
+                marker: {
+                    color: '#66ffcc'
+                }
+            }], {
+                title: 'Tenure Distribution',
+                height: 350
+            });
+        }
+    </script>
+</body>
+</html>
